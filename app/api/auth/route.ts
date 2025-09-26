@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readDB, writeDB } from '@/lib/db';
-import { AuthRequest, AuthResponse, User, Player } from '@/types';
+import { prisma } from '@/lib/prisma';
+import { AuthRequest, AuthResponse } from '@/types';
 
 export async function POST(request: NextRequest): Promise<NextResponse<AuthResponse>> {
   try {
     const { username, password }: AuthRequest = await request.json();
-    const db = readDB();
-
+    
     // Проверка администратора
-    const adminUser = db.users.find((user: User) => 
-      user.username === username && user.password === password && user.isAdmin
-    );
+    const adminUser = await prisma.user.findFirst({
+      where: {
+        username,
+        password,
+        isAdmin: true
+      }
+    });
 
     if (adminUser) {
       return NextResponse.json({ 
@@ -24,32 +27,38 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
     }
 
     // Проверка/создание игрока
-   const player = db.players.find((p: Player) => p.username === username);
+    let player = await prisma.player.findFirst({
+      where: { username }
+    });
     
     if (!player) {
       // Новый игрок
-      const newPlayer: Player = {
-        id: Date.now(),
-        username,
-        score: 0,
-        isActive: true
-      };
-      db.players.push(newPlayer);
-      writeDB(db);
+      player = await prisma.player.create({
+        data: {
+          username,
+          score: 0,
+          isActive: true
+        }
+      });
+      
       return NextResponse.json({ 
         success: true, 
-        user: newPlayer 
+        user: player 
       });
     } else {
-      // Существующий игрок
-      player.isActive = true;
-      writeDB(db);
+      // Активируем существующего игрока
+      player = await prisma.player.update({
+        where: { id: player.id },
+        data: { isActive: true }
+      });
+      
       return NextResponse.json({ 
         success: true, 
         user: player 
       });
     }
   } catch (error) {
+    console.error('Auth error:', error);
     return NextResponse.json({ 
       success: false, 
       error: 'Ошибка авторизации' 

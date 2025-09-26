@@ -10,7 +10,9 @@ export default function Game() {
   const [gameState, setGameState] = useState<GameState>({
     isActive: false,
     currentQuestion: null,
-    playersAnswered: []
+    playersAnswered: [],
+    id: "",
+    answeredQuestions:[]
   });
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string>('');

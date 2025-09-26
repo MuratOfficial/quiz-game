@@ -1,16 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readDB, writeDB } from '@/lib/db';
-import { GameActionRequest, Database, Question, Player } from '@/types';
+import { prisma } from '@/lib/prisma';
+import { GameActionRequest } from '@/types';
 
 export async function GET(): Promise<NextResponse> {
   try {
-    const db: Database = readDB();
+    const [players, gameState, questions] = await Promise.all([
+      prisma.player.findMany({ where: { isActive: true } }),
+      prisma.gameState.findFirst(),
+      prisma.question.findMany()
+    ]);
+
+    let currentQuestion = null;
+    if (gameState?.currentQuestion) {
+      currentQuestion = await prisma.question.findUnique({
+        where: { id: gameState.currentQuestion }
+      });
+    }
+
     return NextResponse.json({
-      players: db.players.filter((p: Player) => p.isActive),
-      gameState: db.gameState,
-      questions: db.questions
+      players,
+      gameState: {
+        ...gameState,
+        currentQuestion
+      },
+      questions
     });
   } catch (error) {
+    console.error('Get game data error:', error);
     return NextResponse.json({ error: 'Ошибка загрузки данных' }, { status: 500 });
   }
 }
@@ -18,37 +34,53 @@ export async function GET(): Promise<NextResponse> {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const { action, data }: GameActionRequest = await request.json();
-    const db: Database = readDB();
-
+    
     switch (action) {
       case 'startGame':
-        db.gameState = {
-          isActive: true,
-          currentQuestion: null,
-          playersAnswered: [],
-          answeredQuestions: []
-        };
+        // Удаляем старые состояния игры
+        await prisma.gameState.deleteMany();
+        
+        // Создаем новое состояние
+        await prisma.gameState.create({
+          data: {
+            isActive: true,
+            playersAnswered: [],
+            answeredQuestions: []
+          }
+        });
         break;
 
       case 'nextQuestion':
-        const unansweredQuestions: Question[] = db.questions.filter((q: Question) => 
-          !db.gameState.answeredQuestions?.includes(q.id)
+        const gameState = await prisma.gameState.findFirst();
+        if (!gameState) break;
+
+        const allQuestions = await prisma.question.findMany();
+        const unansweredQuestions = allQuestions.filter(q => 
+          !gameState.answeredQuestions.includes(q.id)
         );
         
         if (unansweredQuestions.length > 0) {
-          const randomQuestion: Question = unansweredQuestions[
+          const randomQuestion = unansweredQuestions[
             Math.floor(Math.random() * unansweredQuestions.length)
           ];
           
-          db.gameState.currentQuestion = randomQuestion;
-          db.gameState.playersAnswered = [];
-          
-          if (!db.gameState.answeredQuestions) {
-            db.gameState.answeredQuestions = [];
-          }
-          db.gameState.answeredQuestions.push(randomQuestion.id);
+          await prisma.gameState.updateMany({
+            data: {
+              currentQuestion: randomQuestion.id,
+              playersAnswered: [],
+              answeredQuestions: {
+                push: randomQuestion.id
+              }
+            }
+          });
         } else {
-          db.gameState.isActive = false;
+          // Завершаем игру если вопросы закончились
+          await prisma.gameState.updateMany({
+            data: {
+              isActive: false,
+              currentQuestion: null
+            }
+          });
         }
         break;
 
@@ -57,43 +89,66 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           return NextResponse.json({ error: 'Неверные данные' }, { status: 400 });
         }
 
-        const player: Player | undefined = db.players.find((p: Player) => p.id === data.playerId);
-        const currentQuestion: Question | null = db.gameState.currentQuestion;
+        const currentGameState = await prisma.gameState.findFirst();
+        if (!currentGameState?.currentQuestion) break;
 
-        if (player && currentQuestion && !db.gameState.playersAnswered.includes(data.playerId)) {
-          let isCorrect: boolean = false;
+        const player = await prisma.player.findUnique({
+          where: { id: data.playerId }
+        });
+
+        const question = await prisma.question.findUnique({
+          where: { id: currentGameState.currentQuestion }
+        });
+
+        if (player && question && !currentGameState.playersAnswered.includes(data.playerId)) {
+          let isCorrect = false;
           
-          if (currentQuestion.type === 'multiple') {
-            isCorrect = data.answer === currentQuestion.correctAnswer;
-          } else if (currentQuestion.type === 'input') {
-            isCorrect = data.answer.toLowerCase().trim() === currentQuestion.correctAnswer.toLowerCase();
+          if (question.type === 'multiple') {
+            isCorrect = data.answer === question.correctAnswer;
+          } else if (question.type === 'input') {
+            isCorrect = data.answer.toLowerCase().trim() === question.correctAnswer.toLowerCase();
           }
 
           if (isCorrect) {
-            player.score = (player.score || 0) + currentQuestion.points;
+            await prisma.player.update({
+              where: { id: data.playerId },
+              data: { score: { increment: question.points } }
+            });
           }
 
-          db.gameState.playersAnswered.push(data.playerId);
+          await prisma.gameState.updateMany({
+            data: {
+              playersAnswered: {
+                push: data.playerId
+              }
+            }
+          });
         }
         break;
 
       case 'endGame':
-        db.gameState = {
-          isActive: false,
-          currentQuestion: null,
-          playersAnswered: []
-        };
+        await prisma.gameState.updateMany({
+          data: {
+            isActive: false,
+            currentQuestion: null,
+            playersAnswered: []
+          }
+        });
+        
         // Деактивируем всех игроков
-        db.players.forEach((p: Player) => p.isActive = false);
+        await prisma.player.updateMany({
+          data: { isActive: false }
+        });
         break;
 
       default:
         return NextResponse.json({ error: 'Неизвестное действие' }, { status: 400 });
     }
 
-    writeDB(db);
-    return NextResponse.json({ success: true, gameState: db.gameState });
+    const updatedGameState = await prisma.gameState.findFirst();
+    return NextResponse.json({ success: true, gameState: updatedGameState });
   } catch (error) {
+    console.error('Game action error:', error);
     return NextResponse.json({ error: 'Ошибка обновления игры' }, { status: 500 });
   }
 }

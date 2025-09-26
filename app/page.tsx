@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { Player, GameState } from '@/types';
 
 export default function Home() {
-  const [players, setPlayers] = useState<Player[]>([]);
+   const [players, setPlayers] = useState<Player[]>([]);
   const [gameState, setGameState] = useState<GameState>({
+    id: '',
     isActive: false,
     currentQuestion: null,
-    playersAnswered: []
+    playersAnswered: [],
+    answeredQuestions: []
   });
 
   useEffect(() => {

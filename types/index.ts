@@ -1,19 +1,21 @@
+
 export interface User {
-  id: number;
+  id: string;
   username: string;
   password?: string;
   isAdmin: boolean;
 }
 
 export interface Player {
-  id: number;
+  id: string;
   username: string;
   score: number;
   isActive: boolean;
+  createdAt: Date;
 }
 
 export interface Question {
-  id: number;
+  id: string;
   category: 'HTML' | 'CSS' | 'Информатика';
   color: string;
   points: number;
@@ -24,17 +26,27 @@ export interface Question {
 }
 
 export interface GameState {
+  id: string;
   isActive: boolean;
-  currentQuestion: Question | null;
-  playersAnswered: number[];
-  answeredQuestions?: number[];
+  currentQuestion: string | null;
+  playersAnswered: string[];
+  answeredQuestions: string[];
 }
 
-export interface Database {
-  users: User[];
-  players: Player[];
-  questions: Question[];
-  gameState: GameState;
+export interface UserUpdateRequest {
+  id: string;
+  username?: string;
+  password?: string;
+  isAdmin?: boolean;
+}
+
+export interface BulkQuestionsRequest {
+  questions: QuestionRequest[];
+}
+
+export interface UserWithStats extends User {
+  gamesPlayed?: number;
+  lastActive?: Date;
 }
 
 // API Types
@@ -52,7 +64,7 @@ export interface AuthResponse {
 export interface GameActionRequest {
   action: 'startGame' | 'nextQuestion' | 'submitAnswer' | 'endGame';
   data?: {
-    playerId?: number;
+    playerId?: string;
     answer?: string;
   };
 }
