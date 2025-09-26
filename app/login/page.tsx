@@ -101,7 +101,7 @@ export default function Login() {
 
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>Для обычного участия введите только имя пользователя</p>
-          <p>Администратор: admin / admin123</p>
+          {/* <p>Администратор: admin / admin123</p> */}
         </div>
       </div>
     </div>
