@@ -24,7 +24,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AuthRespo
     }
 
     // Проверка/создание игрока
-    let player = db.players.find((p: Player) => p.username === username);
+   const player = db.players.find((p: Player) => p.username === username);
     
     if (!player) {
       // Новый игрок

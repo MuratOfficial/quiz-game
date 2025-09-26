@@ -17,7 +17,7 @@
     {
       "id": 1758882342151,
       "username": "new",
-      "score": 15,
+      "score": 35,
       "isActive": true
     }
   ],
@@ -65,19 +65,26 @@
   "gameState": {
     "isActive": true,
     "currentQuestion": {
-      "id": 2,
-      "category": "CSS",
-      "color": "bg-blue-500",
-      "points": 15,
-      "type": "input",
-      "question": "Какое свойство CSS используется для изменения цвета текста?",
-      "correctAnswer": "color"
+      "id": 3,
+      "category": "Информатика",
+      "color": "bg-green-500",
+      "points": 20,
+      "type": "multiple",
+      "question": "Что означает аббревиатура HTML?",
+      "options": [
+        "Hyper Text Markup Language",
+        "High Tech Modern Language",
+        "Hyper Transfer Markup Language",
+        "Home Tool Markup Language"
+      ],
+      "correctAnswer": "Hyper Text Markup Language"
     },
     "playersAnswered": [
       1758882342151
     ],
     "answeredQuestions": [
-      2
+      2,
+      3
     ]
   }
 }
