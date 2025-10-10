@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       );
     }
-
+/* eslint-disable  @typescript-eslint/no-explicit-any */
     const updateData: any = {};
     if (playerData.username !== undefined) updateData.username = playerData.username;
     if (playerData.score !== undefined) updateData.score = playerData.score;
@@ -73,6 +73,7 @@ export async function PUT(request: NextRequest) {
       message: 'Игрок успешно обновлен',
       player: updatedPlayer
     });
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
   } catch (error: any) {
     console.error('Update player error:', error);
     
@@ -144,6 +145,7 @@ export async function POST(request: NextRequest) {
       message: 'Игрок успешно создан',
       player: newPlayer
     });
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
   } catch (error: any) {
     console.error('Create player error:', error);
     

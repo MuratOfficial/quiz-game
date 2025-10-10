@@ -39,6 +39,7 @@ export default function Login() {
       } else {
         setError(data.error || 'Ошибка авторизации');
       }
+      /* eslint-disable  @typescript-eslint/no-explicit-any */
     } catch (error) {
       setError('Ошибка соединения');
     } finally {

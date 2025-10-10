@@ -86,8 +86,13 @@ export interface PlayerUpdateRequest {
   isActive?: boolean;
 }
 
-export interface AdminPlayer extends Player {
- 
+export interface AdminPlayer  {
+  id: string;
+  username: string;
+  score: number;
+  isAdmin?:boolean;
+  isActive: boolean;
+  createdAt: Date;
 }
 
 export interface CreatePlayerRequest {
