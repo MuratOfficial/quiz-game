@@ -37,10 +37,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     
     switch (action) {
       case 'startGame':
-        // Удаляем старые состояния игры
         await prisma.gameState.deleteMany();
         
-        // Создаем новое состояние
         await prisma.gameState.create({
           data: {
             isActive: true,

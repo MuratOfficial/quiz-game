@@ -10,6 +10,7 @@ export interface Player {
   id: string;
   username: string;
   score: number;
+  isAdmin?:boolean;
   isActive: boolean;
   createdAt: Date;
 }
@@ -76,4 +77,21 @@ export interface QuestionRequest {
   options?: string[];
   correctAnswer: string;
   points: number;
+}
+
+export interface PlayerUpdateRequest {
+  id: string;
+  username?: string;
+  score?: number;
+  isActive?: boolean;
+}
+
+export interface AdminPlayer extends Player {
+ 
+}
+
+export interface CreatePlayerRequest {
+  username: string;
+  score?: number;
+  isActive?: boolean;
 }

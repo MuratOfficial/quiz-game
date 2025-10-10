@@ -27,7 +27,7 @@ export default function Home() {
     };
 
     fetchGameData();
-    const interval = setInterval(fetchGameData, 2000);
+    const interval = setInterval(fetchGameData, 4000);
     
     return () => clearInterval(interval);
   }, []);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Player, GameState, Question, QuestionRequest, UserUpdateRequest } from '@/types';
+import { User, Player, GameState, Question, QuestionRequest, UserUpdateRequest, AdminPlayer, PlayerUpdateRequest } from '@/types';
 
 interface AdminUser extends User {
   createdAt: string;
@@ -18,7 +18,12 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<'game' | 'questions' | 'users' | 'bulk-import'>('game');
   const [jsonInput, setJsonInput] = useState<string>('');
   const [importResult, setImportResult] = useState<string>('');
-  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [editingUser, setEditingUser] = useState<AdminUser | User | null>(null);
+
+    const [allPlayers, setAllPlayers] = useState<AdminPlayer[]>([]);
+  const [editingPlayer, setEditingPlayer] = useState<AdminPlayer | null>(null);
+  const [creatingPlayer, setCreatingPlayer] = useState(false);
+  const [newPlayer, setNewPlayer] = useState({ username: '', score: 0, isActive: true });
   
   const router = useRouter();
 
@@ -159,7 +164,7 @@ export default function Admin() {
         id: editingUser.id,
         username: editingUser.username,
         password: editingUser.password,
-        isAdmin: editingUser.isAdmin,
+        isAdmin: editingUser?.isAdmin,
       };
 
       const response = await fetch('/api/admin/users', {
@@ -206,6 +211,136 @@ export default function Admin() {
       setImportResult(`Ошибка: ${error.message}`);
     }
   };
+
+    const fetchAllPlayers = async () => {
+    try {
+      const response = await fetch('/api/admin/players');
+      const data = await response.json();
+      if (data.success) {
+        setAllPlayers(data.players || []);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки игроков:', error);
+    }
+  };
+
+  const handlePlayerUpdate = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingPlayer) return;
+
+    try {
+      const updateData: PlayerUpdateRequest = {
+        id: editingPlayer.id,
+        username: editingPlayer.username,
+        score: editingPlayer.score,
+        isActive: editingPlayer.isActive,
+      };
+
+      const response = await fetch('/api/admin/players', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setImportResult('Игрок успешно обновлен');
+        setEditingPlayer(null);
+        fetchAllPlayers();
+        // Обновляем основной список игроков
+        const gameResponse = await fetch('/api/game');
+        const gameData = await gameResponse.json();
+        setPlayers(gameData.players || []);
+      } else {
+        setImportResult(`Ошибка: ${result.error}`);
+      }
+    } catch (error: any) {
+      setImportResult(`Ошибка: ${error.message}`);
+    }
+  };
+
+  const handleDeletePlayer = async (playerId: string) => {
+    if (!confirm('Вы уверены, что хотите удалить этого игрока?')) return;
+
+    try {
+      const response = await fetch('/api/admin/players', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: playerId }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setImportResult('Игрок успешно удален');
+        fetchAllPlayers();
+      } else {
+        setImportResult(`Ошибка: ${result.error}`);
+      }
+    } catch (error: any) {
+      setImportResult(`Ошибка: ${error.message}`);
+    }
+  };
+
+  const handleCreatePlayer = async (e: FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch('/api/admin/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPlayer),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setImportResult('Игрок успешно создан');
+        setCreatingPlayer(false);
+        setNewPlayer({ username: '', score: 0, isActive: true });
+        fetchAllPlayers();
+      } else {
+        setImportResult(`Ошибка: ${result.error}`);
+      }
+    } catch (error: any) {
+      setImportResult(`Ошибка: ${error.message}`);
+    }
+  };
+
+  const resetPlayerScore = async (playerId: string) => {
+    if (!confirm('Вы уверены, что хотите сбросить очки этого игрока?')) return;
+
+    try {
+      const response = await fetch('/api/admin/players', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: playerId, score: 0 }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setImportResult('Очки игрока сброшены');
+        fetchAllPlayers();
+        // Обновляем основной список игроков
+        const gameResponse = await fetch('/api/game');
+        const gameData = await gameResponse.json();
+        setPlayers(gameData.players || []);
+      } else {
+        setImportResult(`Ошибка: ${result.error}`);
+      }
+    } catch (error: any) {
+      setImportResult(`Ошибка: ${error.message}`);
+    }
+  };
+
+    useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+      fetchAllPlayers();
+    }
+  }, [activeTab]);
 
   if (!user) {
     return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">Загрузка...</div>;
@@ -331,12 +466,62 @@ export default function Admin() {
         )}
 
         {/* Вкладка пользователей */}
-        {activeTab === 'users' && (
+         {activeTab === 'users' && (
           <div className="space-y-6">
-            {/* Редактирование пользователя */}
+            {/* Форма создания нового игрока */}
+            {creatingPlayer && (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-semibold mb-4">Создание нового игрока</h3>
+                <form onSubmit={handleCreatePlayer} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Имя пользователя</label>
+                    <input
+                      type="text"
+                      value={newPlayer.username}
+                      onChange={(e) => setNewPlayer({...newPlayer, username: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Начальные очки</label>
+                    <input
+                      type="number"
+                      value={newPlayer.score}
+                      onChange={(e) => setNewPlayer({...newPlayer, score: parseInt(e.target.value) || 0})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      min="0"
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={newPlayer.isActive}
+                      onChange={(e) => setNewPlayer({...newPlayer, isActive: e.target.checked})}
+                      className="mr-2"
+                    />
+                    <label className="text-sm font-medium text-gray-700">Активный</label>
+                  </div>
+                  <div className="flex space-x-4">
+                    <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg">
+                      Создать
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setCreatingPlayer(false)}
+                      className="bg-gray-500 text-white px-4 py-2 rounded-lg"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Редактирование администратора */}
             {editingUser && (
               <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Редактирование пользователя</h3>
+                <h3 className="text-xl font-semibold mb-4">Редактирование администратора</h3>
                 <form onSubmit={handleUserUpdate} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Имя пользователя</label>
@@ -383,6 +568,129 @@ export default function Admin() {
               </div>
             )}
 
+            {/* Редактирование игрока */}
+            {editingPlayer && (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-semibold mb-4">Редактирование игрока</h3>
+                <form onSubmit={handlePlayerUpdate} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Имя пользователя</label>
+                    <input
+                      type="text"
+                      value={editingPlayer.username}
+                      onChange={(e) => setEditingPlayer({...editingPlayer, username: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Очки</label>
+                    <input
+                      type="number"
+                      value={editingPlayer.score}
+                      onChange={(e) => setEditingPlayer({...editingPlayer, score: parseInt(e.target.value) || 0})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      min="0"
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editingPlayer.isActive}
+                      onChange={(e) => setEditingPlayer({...editingPlayer, isActive: e.target.checked})}
+                      className="mr-2"
+                    />
+                    <label className="text-sm font-medium text-gray-700">Активный</label>
+                  </div>
+                  <div className="flex space-x-4">
+                    <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-lg">
+                      Сохранить
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setEditingPlayer(null)}
+                      className="bg-gray-500 text-white px-4 py-2 rounded-lg"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Кнопка создания нового игрока */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">Управление игроками</h3>
+                <button
+                  onClick={() => setCreatingPlayer(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg"
+                >
+                  + Создать игрока
+                </button>
+              </div>
+
+              {/* Список всех игроков */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Имя пользователя</th>
+                      <th className="text-left p-2">Очки</th>
+                      <th className="text-left p-2">Статус</th>
+                      <th className="text-left p-2">Дата регистрации</th>
+                      <th className="text-left p-2">Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allPlayers.map(player => (
+                      <tr key={player.id} className="border-b hover:bg-gray-50">
+                        <td className="p-2 font-medium">{player.username}</td>
+                        <td className="p-2">
+                          <span className="font-semibold text-indigo-600">{player.score}</span>
+                        </td>
+                        <td className="p-2">
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            player.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {player.isActive ? 'Онлайн' : 'Офлайн'}
+                          </span>
+                        </td>
+                        <td className="p-2 text-sm text-gray-600">
+                          {new Date(player.createdAt).toLocaleDateString('ru-RU')}
+                        </td>
+                        <td className="p-2 space-x-2">
+                          <button
+                            onClick={() => setEditingPlayer(player)}
+                            className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 border border-blue-200 rounded"
+                          >
+                            Редактировать
+                          </button>
+                          <button
+                            onClick={() => resetPlayerScore(player.id)}
+                            className="text-yellow-600 hover:text-yellow-800 text-sm px-2 py-1 border border-yellow-200 rounded"
+                          >
+                            Сбросить очки
+                          </button>
+                          <button
+                            onClick={() => handleDeletePlayer(player.id)}
+                            className="text-red-600 hover:text-red-800 text-sm px-2 py-1 border border-red-200 rounded"
+                          >
+                            Удалить
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {allPlayers.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Нет зарегистрированных игроков
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Список администраторов */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-xl font-semibold mb-4">Администраторы</h3>
@@ -398,8 +706,8 @@ export default function Admin() {
                   </thead>
                   <tbody>
                     {adminUsers.map(admin => (
-                      <tr key={admin.id} className="border-b">
-                        <td className="p-2">{admin.username}</td>
+                      <tr key={admin.id} className="border-b hover:bg-gray-50">
+                        <td className="p-2 font-medium">{admin.username}</td>
                         <td className="p-2">
                           <span className={`px-2 py-1 rounded text-xs ${
                             admin.isAdmin ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
@@ -407,18 +715,20 @@ export default function Admin() {
                             {admin.isAdmin ? 'Админ' : 'Пользователь'}
                           </span>
                         </td>
-                        <td className="p-2">{new Date(admin.createdAt).toLocaleDateString()}</td>
+                        <td className="p-2 text-sm text-gray-600">
+                          {new Date(admin.createdAt).toLocaleDateString('ru-RU')}
+                        </td>
                         <td className="p-2 space-x-2">
                           <button
                             onClick={() => setEditingUser(admin)}
-                            className="text-blue-600 hover:text-blue-800 text-sm"
+                            className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 border border-blue-200 rounded"
                           >
                             Редактировать
                           </button>
                           {admin.username !== 'admin' && (
                             <button
                               onClick={() => handleDeleteUser(admin.id)}
-                              className="text-red-600 hover:text-red-800 text-sm"
+                              className="text-red-600 hover:text-red-800 text-sm px-2 py-1 border border-red-200 rounded"
                             >
                               Удалить
                             </button>
@@ -431,9 +741,9 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Список игроков */}
+            {/* Список онлайн игроков */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-semibold mb-4">Игроки</h3>
+              <h3 className="text-xl font-semibold mb-4">Онлайн игроки ({players.length})</h3>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -441,26 +751,27 @@ export default function Admin() {
                       <th className="text-left p-2">Имя пользователя</th>
                       <th className="text-left p-2">Очки</th>
                       <th className="text-left p-2">Статус</th>
-                      <th className="text-left p-2">Дата регистрации</th>
                     </tr>
                   </thead>
                   <tbody>
                     {players.map(player => (
-                      <tr key={player.id} className="border-b">
+                      <tr key={player.id} className="border-b hover:bg-gray-50">
                         <td className="p-2">{player.username}</td>
-                        <td className="p-2 font-semibold">{player.score}</td>
+                        <td className="p-2 font-semibold text-indigo-600">{player.score}</td>
                         <td className="p-2">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            player.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {player.isActive ? 'Онлайн' : 'Офлайн'}
+                          <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">
+                            Онлайн
                           </span>
                         </td>
-                        <td className="p-2">{new Date(player.createdAt).toLocaleDateString()}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                {players.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    Нет игроков онлайн
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -570,6 +881,7 @@ export default function Admin() {
                       <span>{question.type === 'multiple' ? 'Выбор' : 'Текст'}</span>
                       <span>{question.points} очков</span>
                     </div>
+                    <p className="text-sm font-medium mb-1">Ответ: {question.correctAnswer}</p>
                   </div>
                 ))}
               </div>
