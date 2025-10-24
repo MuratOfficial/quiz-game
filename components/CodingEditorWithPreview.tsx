@@ -17,7 +17,6 @@ export default function CodingEditorWithPreview({ question, playerId, onSubmit }
   const [isRunning, setIsRunning] = useState(false);
   const [previewHtml, setPreviewHtml] = useState('');
   const [viewMode, setViewMode] = useState<'split' | 'editor' | 'preview'>('split');
-  const [testResults, setTestResults] = useState<TestResultsJson | null>(null);
 
   const generatePreviewHtml = () => {
     if (question.language === 'javascript') {

@@ -224,7 +224,7 @@ export interface ReviewSubmissionRequest {
   status: 'approved' | 'rejected';
   feedback?: string;
 }
-
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -239,6 +239,7 @@ export interface CodingSubmissionResponse {
   playerId: string;
   code: string;
   language: string;
+  /* eslint-disable  @typescript-eslint/no-explicit-any */
   testResults?: any;
   output?: string;
   isCorrect?: boolean;

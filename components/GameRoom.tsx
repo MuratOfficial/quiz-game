@@ -4,7 +4,6 @@ import { useSession } from 'next-auth/react';
 import { Question, CodingQuestion, Player, GameState } from '@/types';
 import { useRouter } from 'next/navigation';
 
-import CodingEditor from './CodingEditor';
 import MultipleChoiceQuestion from './MultipleChoiceQuestion';
 import AdminControls from './AdminControl';
 import PlayersList from './PlayersList';

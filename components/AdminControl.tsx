@@ -2,6 +2,7 @@
 'use client';
 import { useState } from 'react';
 import { GameState } from '@/types';
+import AdminScoreManager from './AdminScoreManager';
 
 interface AdminControlsProps {
   gameState: GameState | null;
@@ -145,6 +146,8 @@ export default function AdminControls({ gameState, onGameStateChange }: AdminCon
           </div>
         </div>
       )}
+
+      <AdminScoreManager/>
     </div>
   );
 }

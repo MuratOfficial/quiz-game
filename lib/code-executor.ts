@@ -32,6 +32,7 @@ export async function executeCode(
         passed: testPassed,
         isHidden: testCase.isHidden,
       });
+      /* eslint-disable  @typescript-eslint/no-explicit-any */
     } catch (error: any) {
       details.push({
         testCaseId: testCase.id,
@@ -57,13 +58,14 @@ async function executeJavaScript(code: string, input: string): Promise<string> {
       // Создаем безопасную среду выполнения
       let output = '';
       
-      const customConsole = {
-        log: (...args: any[]) => {
-          output += args.map(arg => 
-            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-          ).join(' ') + '\n';
-        }
-      };
+      // const customConsole = {
+        
+      //   log: (...args: any[]) => {
+      //     output += args.map(arg => 
+      //       typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      //     ).join(' ') + '\n';
+      //   }
+      // };
 
       // Оборачиваем код для захвата вывода
       const wrappedCode = `
@@ -83,6 +85,7 @@ async function executeJavaScript(code: string, input: string): Promise<string> {
       eval(wrappedCode);
       
       resolve(output.trim());
+      /* eslint-disable  @typescript-eslint/no-explicit-any */
     } catch (error: any) {
       reject(error);
     }
