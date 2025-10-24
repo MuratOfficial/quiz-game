@@ -50,7 +50,7 @@ export async function POST(
       );
     }
 
-    // Подготавливаем данные для обновления
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
     const updateData: any = {
       status,
       reviewedBy: session.user.id,

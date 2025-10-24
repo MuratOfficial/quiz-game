@@ -331,7 +331,8 @@ export default function AdminScoreManager({ onUpdate }: AdminScoreManagerProps) 
                   <div className="mt-4">
                     <h4 className="font-medium text-gray-900 mb-2">Результаты тестов:</h4>
                     <div className="space-y-2">
-                      {submission.testResults.details?.map((detail: any, index: number) => (
+                      
+                      {submission.testResults.details?.map((detail, index: number) => (
                         <div
                           key={index}
                           className={`p-3 rounded border ${

@@ -56,7 +56,7 @@ async function executeJavaScript(code: string, input: string): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
       // Создаем безопасную среду выполнения
-      let output = '';
+      const output = '';
       
       // const customConsole = {
         
