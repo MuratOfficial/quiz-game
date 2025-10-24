@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,9 +13,54 @@ model User {
   password String
   isAdmin  Boolean  @default(false)
   createdAt DateTime @default(now())
-  
+
+  // NextAuth relations
+  accounts Account[]
+  sessions Session[]
+
   @@map("users")
 }
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
 
 model Player {
   id       String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -24,7 +68,10 @@ model Player {
   score    Int      @default(0)
   isActive Boolean  @default(true)
   createdAt DateTime @default(now())
-  
+
+  // Relations
+  codingSubmissions CodingSubmission[]
+
   @@map("players")
 }
 
@@ -38,17 +85,78 @@ model Question {
   options       String[]
   correctAnswer String
   createdAt     DateTime @default(now())
-  
+
   @@map("questions")
+}
+
+model CodingQuestion {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  initialCode String   
+  language    String   @default("javascript")
+  difficulty  String   
+  points      Int
+  category    String
+  
+  testCases   TestCase[]
+  expectedOutput String? 
+  
+  requiresManualReview Boolean @default(false)
+  
+  codingSubmissions CodingSubmission[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("codingQuestions")
+}
+
+model TestCase {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  codingQuestionId String   @db.ObjectId
+  input           String
+  expectedOutput  String
+  isHidden       Boolean  @default(false) // Скрытые тесты для участников
+  
+  codingQuestion CodingQuestion @relation(fields: [codingQuestionId], references: [id], onDelete: Cascade)
+  
+  @@map("testCases")
+}
+
+model CodingSubmission {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  codingQuestionId String   @db.ObjectId
+  playerId         String   @db.ObjectId
+  code             String   
+  language         String
+  
+  testResults     Json?    
+  output          String?   
+  isCorrect       Boolean?
+  score           Int?      
+  
+  status          String   @default("pending") 
+  reviewedBy      String?  @db.ObjectId
+  reviewFeedback  String?
+  
+  createdAt DateTime @default(now())
+  
+  codingQuestion CodingQuestion @relation(fields: [codingQuestionId], references: [id])
+  player         Player        @relation(fields: [playerId], references: [id])
+  
+  @@map("codingSubmissions")
 }
 
 model GameState {
   id               String   @id @default(auto()) @map("_id") @db.ObjectId
   isActive         Boolean  @default(false)
   currentQuestion  String?  @db.ObjectId
+  currentCodingQuestion String? @db.ObjectId
   playersAnswered  String[]
   answeredQuestions String[]
+  answeredCodingQuestions String[]
   createdAt        DateTime @default(now())
-  
+
   @@map("gameState")
 }

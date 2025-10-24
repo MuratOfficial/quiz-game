@@ -133,7 +133,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }
         });
         
-        // Деактивируем всех игроков
         await prisma.player.updateMany({
           data: { isActive: false }
         });

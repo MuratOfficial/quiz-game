@@ -3,34 +3,44 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Player, GameState } from '@/types';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-   const [players, setPlayers] = useState<Player[]>([]);
-  const [gameState, setGameState] = useState<GameState>({
-    id: '',
-    isActive: false,
-    currentQuestion: null,
-    playersAnswered: [],
-    answeredQuestions: []
-  });
 
-  useEffect(() => {
-    const fetchGameData = async () => {
-      try {
-        const response = await fetch('/api/game');
-        const data = await response.json();
-        setPlayers(data.players || []);
-        setGameState(data.gameState || {});
-      } catch (error) {
-        console.error('Ошибка загрузки данных:', error);
-      }
-    };
+  // const session = await getServerSession(authOptions);
 
-    fetchGameData();
-    const interval = setInterval(fetchGameData, 4000);
+  // if (!session) {
+  //   redirect('/auth/signin');
+  // }
+
+  //  const [players, setPlayers] = useState<Player[]>([]);
+  // const [gameState, setGameState] = useState<GameState>({
+  //   id: '',
+  //   isActive: false,
+  //   currentQuestion: null,
+  //   playersAnswered: [],
+  //   answeredQuestions: []
+  // });
+
+  // useEffect(() => {
+  //   const fetchGameData = async () => {
+  //     try {
+  //       const response = await fetch('/api/game');
+  //       const data = await response.json();
+  //       setPlayers(data.players || []);
+  //       // setGameState(data.gameState || {});
+  //     } catch (error) {
+  //       console.error('Ошибка загрузки данных:', error);
+  //     }
+  //   };
+
+  //   fetchGameData();
+  //   const interval = setInterval(fetchGameData, 4000);
     
-    return () => clearInterval(interval);
-  }, []);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
@@ -43,11 +53,11 @@ export default function Home() {
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold text-gray-800">Статус игры</h2>
-            <div className={`px-4 py-2 rounded-full font-medium ${
+            {/* <div className={`px-4 py-2 rounded-full font-medium ${
               gameState.isActive ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
             }`}>
               {gameState.isActive ? 'Игра активна' : 'Ожидание игроков'}
-            </div>
+            </div> */}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -77,9 +87,17 @@ export default function Home() {
               </button>
             </Link>
           </div>
+          <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            
+            <Link href="/coding" className="flex-1">
+              <button className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200">
+                CodingBattle
+              </button>
+            </Link>
+          </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        {/* <div className="bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">Текущие игроки</h2>
           {players.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -98,7 +116,7 @@ export default function Home() {
           ) : (
             <p className="text-gray-500 text-center py-4">Пока нет игроков в игре</p>
           )}
-        </div>
+        </div> */}
       </div>
     </div>
   );
