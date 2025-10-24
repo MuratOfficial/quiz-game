@@ -9,6 +9,7 @@ import MultipleChoiceQuestion from './MultipleChoiceQuestion';
 import AdminControls from './AdminControl';
 import PlayersList from './PlayersList';
 import LogoutButton from './LogoutButton';
+import CodingEditorWithPreview from './CodingEditorWithPreview';
 
 export default function GameRoom() {
   const { data: session, status } = useSession();
@@ -233,7 +234,7 @@ export default function GameRoom() {
                   </p>
                 </div>
               ) : isCodingQuestion(currentQuestion) ? (
-                <CodingEditor
+                <CodingEditorWithPreview
                   question={currentQuestion}
                   playerId={currentPlayer?.id || ''}
                   onSubmit={handleCodingSubmit}

@@ -224,3 +224,40 @@ export interface ReviewSubmissionRequest {
   status: 'approved' | 'rejected';
   feedback?: string;
 }
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+  count?: number;
+}
+
+export interface CodingSubmissionResponse {
+  id: string;
+  codingQuestionId: string;
+  playerId: string;
+  code: string;
+  language: string;
+  testResults?: any;
+  output?: string;
+  isCorrect?: boolean;
+  score?: number;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewFeedback?: string;
+  reviewedBy?: string;
+  createdAt: Date;
+  codingQuestion?: {
+    id: string;
+    title: string;
+    points: number;
+    difficulty: string;
+    category: string;
+    requiresManualReview: boolean;
+  };
+  player?: {
+    id: string;
+    username: string;
+    score: number;
+  };
+}
