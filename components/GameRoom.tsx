@@ -178,7 +178,7 @@ const fetchCurrentQuestion = async (questionId: string) => {
     }
   };
 
-  const handleCodingSubmit = async (submission: any) => {
+  const handleCodingSubmit = async () => {
     if (!currentPlayer) return;
     fetchPlayers();
   };
@@ -186,7 +186,7 @@ const fetchCurrentQuestion = async (questionId: string) => {
   const handleTimeUp = () => {
     setTimeLeft(null);
   };
-
+/* eslint-disable  @typescript-eslint/no-explicit-any */
   const isCodingQuestion = (question: any): question is CodingQuestion => {
     return question && 'initialCode' in question;
   };

@@ -40,7 +40,7 @@ export default function CodingQuestionsAdmin() {
       setIsLoading(false);
     }
   };
-
+/* eslint-disable  @typescript-eslint/no-explicit-any */
   const handleCreateQuestion = async (formData: any) => {
     try {
       const response = await fetch('/api/coding-questions', {
@@ -57,7 +57,7 @@ export default function CodingQuestionsAdmin() {
       console.error('Error creating question:', error);
     }
   };
-
+/* eslint-disable  @typescript-eslint/no-explicit-any */
   const handleUpdateQuestion = async (formData: any) => {
     if (!editingQuestion) return;
 
@@ -93,7 +93,7 @@ export default function CodingQuestionsAdmin() {
       console.error('Error deleting question:', error);
     }
   };
-
+/* eslint-disable  @typescript-eslint/no-explicit-any */
   const handleJsonImport = (results: any[]) => {
     setActiveView('list');
     fetchCodingQuestions();

@@ -79,6 +79,7 @@ export async function PUT(
       message: 'Вопрос успешно обновлен',
       question: updatedQuestion 
     });
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
   } catch (error: any) {
     console.error('Update question error:', error);
     

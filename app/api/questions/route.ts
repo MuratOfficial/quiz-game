@@ -68,6 +68,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       message: 'Вопрос успешно создан',
       data: newQuestion 
     });
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
   } catch (error: any) {
     console.error('Create question error:', error);
     
