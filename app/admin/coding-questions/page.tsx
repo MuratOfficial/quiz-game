@@ -1,17 +1,17 @@
-
 'use client';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { CodingQuestion } from '@/types';
 import CodingQuestionForm from '@/components/CodingQuestionForm';
+import JsonImportForm from '@/components/JsonImportForm';
 
 export default function CodingQuestionsAdmin() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [codingQuestions, setCodingQuestions] = useState<CodingQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [activeView, setActiveView] = useState<'list' | 'create' | 'edit' | 'import'>('list');
   const [editingQuestion, setEditingQuestion] = useState<CodingQuestion | null>(null);
 
   useEffect(() => {
@@ -41,7 +41,6 @@ export default function CodingQuestionsAdmin() {
     }
   };
 
-  /* eslint-disable  @typescript-eslint/no-explicit-any */
   const handleCreateQuestion = async (formData: any) => {
     try {
       const response = await fetch('/api/coding-questions', {
@@ -51,14 +50,14 @@ export default function CodingQuestionsAdmin() {
       });
 
       if (response.ok) {
-        setShowForm(false);
+        setActiveView('list');
         fetchCodingQuestions();
       }
     } catch (error) {
       console.error('Error creating question:', error);
     }
   };
-/* eslint-disable  @typescript-eslint/no-explicit-any */
+
   const handleUpdateQuestion = async (formData: any) => {
     if (!editingQuestion) return;
 
@@ -71,6 +70,7 @@ export default function CodingQuestionsAdmin() {
 
       if (response.ok) {
         setEditingQuestion(null);
+        setActiveView('list');
         fetchCodingQuestions();
       }
     } catch (error) {
@@ -94,6 +94,12 @@ export default function CodingQuestionsAdmin() {
     }
   };
 
+  const handleJsonImport = (results: any[]) => {
+    setActiveView('list');
+    fetchCodingQuestions();
+    alert(`Успешно импортировано ${results.length} задач`);
+  };
+
   if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -109,14 +115,15 @@ export default function CodingQuestionsAdmin() {
     return null;
   }
 
-  if (showForm || editingQuestion) {
+  // Формы создания/редактирования
+  if (activeView === 'create' || activeView === 'edit') {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <CodingQuestionForm
           question={editingQuestion || undefined}
           onSubmit={editingQuestion ? handleUpdateQuestion : handleCreateQuestion}
           onCancel={() => {
-            setShowForm(false);
+            setActiveView('list');
             setEditingQuestion(null);
           }}
         />
@@ -124,6 +131,19 @@ export default function CodingQuestionsAdmin() {
     );
   }
 
+  // Форма импорта JSON
+  if (activeView === 'import') {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <JsonImportForm
+          onImport={handleJsonImport}
+          onCancel={() => setActiveView('list')}
+        />
+      </div>
+    );
+  }
+
+  // Список задач
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -132,12 +152,20 @@ export default function CodingQuestionsAdmin() {
             <h1 className="text-3xl font-bold text-gray-900">Coding задачи</h1>
             <p className="text-gray-600 mt-2">Управление задачами по программированию</p>
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-          >
-            + Создать задачу
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setActiveView('import')}
+              className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
+            >
+              📁 Импорт JSON
+            </button>
+            <button
+              onClick={() => setActiveView('create')}
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              + Создать задачу
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -155,6 +183,9 @@ export default function CodingQuestionsAdmin() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Очки
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Язык
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Тесты
@@ -189,11 +220,17 @@ export default function CodingQuestionsAdmin() {
                     {question.points}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {question.testCases.length}
+                    {question.language}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {question.testCases?.length || 0}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button
-                      onClick={() => setEditingQuestion(question)}
+                      onClick={() => {
+                        setEditingQuestion(question);
+                        setActiveView('edit');
+                      }}
                       className="text-blue-600 hover:text-blue-900"
                     >
                       Редактировать
@@ -213,6 +250,12 @@ export default function CodingQuestionsAdmin() {
           {codingQuestions.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500">Нет созданных задач</p>
+              <button
+                onClick={() => setActiveView('import')}
+                className="mt-4 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
+              >
+                Импортировать из JSON
+              </button>
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-// app/api/game-state/next-question/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -24,8 +24,15 @@ export async function POST(req: NextRequest) {
     let updatedGameState;
 
     if (type === 'multiple-choice') {
-      // Получаем случайный обычный вопрос
-      const questions = await prisma.question.findMany();
+      // Получаем случайный обычный вопрос, который еще не был отвечен
+      const questions = await prisma.question.findMany({
+        where: {
+          id: {
+            notIn: gameState.answeredQuestions,
+          },
+        },
+      });
+
       if (questions.length === 0) {
         return NextResponse.json(
           { error: 'No questions available' },
@@ -39,13 +46,20 @@ export async function POST(req: NextRequest) {
         where: { id: gameState.id },
         data: {
           currentQuestion: randomQuestion.id,
-          currentCodingQuestion: null,
-          playersAnswered: [],
+          currentCodingQuestion: null, // Очищаем coding вопрос
+          playersAnswered: [], // Сбрасываем список ответивших
         },
       });
     } else if (type === 'coding') {
-      // Получаем случайную coding задачу
-      const codingQuestions = await prisma.codingQuestion.findMany();
+      // Получаем случайную coding задачу, которая еще не была отвечена
+      const codingQuestions = await prisma.codingQuestion.findMany({
+        where: {
+          id: {
+            notIn: gameState.answeredCodingQuestions,
+          },
+        },
+      });
+
       if (codingQuestions.length === 0) {
         return NextResponse.json(
           { error: 'No coding questions available' },
@@ -59,8 +73,8 @@ export async function POST(req: NextRequest) {
         where: { id: gameState.id },
         data: {
           currentCodingQuestion: randomCodingQuestion.id,
-          currentQuestion: null,
-          playersAnswered: [],
+          currentQuestion: null, // Очищаем обычный вопрос
+          playersAnswered: [], // Сбрасываем список ответивших
         },
       });
     } else {

@@ -10,6 +10,7 @@ export async function GET() {
     let gameState = await prisma.gameState.findFirst();
     
     if (!gameState) {
+      // Создаем начальное состояние игры если его нет
       gameState = await prisma.gameState.create({
         data: {
           isActive: false,
@@ -30,7 +31,7 @@ export async function GET() {
   }
 }
 
-// POST - Обновить состояние игры (старт/стоп)
+// POST - Обновить состояние игры
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.isAdmin) {
@@ -38,15 +39,17 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { isActive } = await req.json();
+    const { isActive, currentQuestion, currentCodingQuestion, playersAnswered } = await req.json();
 
     let gameState = await prisma.gameState.findFirst();
     
     if (!gameState) {
       gameState = await prisma.gameState.create({
         data: {
-          isActive,
-          playersAnswered: [],
+          isActive: isActive ?? false,
+          currentQuestion: currentQuestion ?? null,
+          currentCodingQuestion: currentCodingQuestion ?? null,
+          playersAnswered: playersAnswered ?? [],
           answeredQuestions: [],
           answeredCodingQuestions: [],
         },
@@ -55,7 +58,10 @@ export async function POST(req: NextRequest) {
       gameState = await prisma.gameState.update({
         where: { id: gameState.id },
         data: { 
-          isActive,
+          ...(isActive !== undefined && { isActive }),
+          ...(currentQuestion !== undefined && { currentQuestion }),
+          ...(currentCodingQuestion !== undefined && { currentCodingQuestion }),
+          ...(playersAnswered !== undefined && { playersAnswered }),
           // Сбрасываем answered players при старте новой игры
           ...(isActive && {
             playersAnswered: [],
